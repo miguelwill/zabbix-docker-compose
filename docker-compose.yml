@@ -1,0 +1,90 @@
+version: '3.6'
+
+services:
+
+  mariadb:
+    image: mariadb:10.5
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: C4p49.testing
+      TZ: America/Santiago
+      MYSQL_EXTRA_FLAGS: "--max-connect-errors=5000 --max_connections=300 --innodb_buffer_pool_size=2G --max_allowed_packet=512Mi --max_binlog_size=100M --log_bin_trust_function_creators=ON --expire_logs_days=1 --character-set-server
+=utf8 --collation-server=utf8_bin --default-authentication-plugin=mysql_native_password"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - zabbix-net
+
+  java-gateway:
+    image: zabbix/zabbix-java-gateway:alpine-5.2-latest
+    environment:
+      TZ: America/Santiago
+    networks:
+      - zabbix-net
+    volumes:
+      - ext_lib:/usr/sbin/zabbix_java/ext_lib
+
+  server-mysql:
+    image: zabbix/zabbix-server-mysql:alpine-5.2-latest
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: Z4b1xx.wo9837458
+      MYSQL_ROOT_PASSWORD: C4p49.testing
+      TZ: America/Santiago
+      ZBX_JAVAGATEWAY: java-gateway
+      DB_SERVER_HOST: mariadb
+    ports:
+      - 10051:10051
+    networks:
+      - zabbix-net
+    volumes:
+      - alertscripts:/usr/lib/zabbix/alertscripts
+      - externalscripts:/usr/lib/zabbix/externalscripts
+      - modules:/var/lib/zabbix/modules
+      - enc:/var/lib/zabbix/enc
+      - ssh_keys:/var/lib/zabbix/ssh_keys
+      - certs:/var/lib/zabbix/ssl/certs
+      - keys:/var/lib/zabbix/ssl/keys
+      - ssl_ca:/var/lib/zabbix/ssl/ssl_ca
+      - snmptraps:/var/lib/zabbix/snmptraps
+      - mibs:/var/lib/zabbix/mibs
+      - export:/var/lib/zabbix/export
+
+  web-nginx-mysql:
+    image: zabbix/zabbix-web-nginx-mysql:alpine-5.2-latest
+    restart: unless-stopped
+    environment:
+      ZBX_SERVER_HOST: server-mysql
+      DB_SERVER_HOST: mariadb
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: zabbix
+      MYSQL_PASSWORD: Z4b1xx.wo9837458
+      MYSQL_ROOT_PASSWORD: C4p49.testing
+      TZ: America/Santiago
+    networks:
+      - zabbix-net
+    ports:
+      - 80:8080
+
+networks:
+  zabbix-net:
+          #    driver: overlay
+          #    attachable: true
+
+
+volumes:
+  mariadb_data:
+  alertscripts:
+  externalscripts:
+  modules:
+  enc:
+  ssh_keys:
+  certs:
+  keys:
+  ssl_ca:
+  snmptraps:
+  mibs:
+  export:
+  ext_lib:
